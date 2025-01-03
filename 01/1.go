@@ -122,7 +122,7 @@ func fixDocumentST() results {
 }
 
 func findFirstDigit(s string) byte {
-	var digit = 0
+	var digit byte = 0
 	for i := 0; i < len(s); i++ {
 		if s[i] >= '0' && s[i] <= '9' {
 			digit = s[i] - '0'
@@ -133,7 +133,7 @@ func findFirstDigit(s string) byte {
 }
 
 func findLastDigit(s string) byte {
-	var digit = 0
+	var digit byte = 0
 	for i := len(s) - 1; i >= 0; i-- {
 		if s[i] >= '0' && s[i] <= '9' {
 			digit = s[i] - '0'
