@@ -36,6 +36,7 @@ var (
 	}
 	printST = true
 	printMT = true
+	buf     = make([]byte, 64)
 )
 
 func main() {
@@ -150,7 +151,7 @@ func findLastNumber(s string) byte {
 
 func reverse(s string) string {
 	size := len(s)
-	buf := make([]byte, size)
+	buf := buf[:size]
 	for i := 0; i < size; i++ {
 		buf[size-1-i] = s[i]
 	}
