@@ -12,4 +12,9 @@
 - **Solution**: accumulating the result to a thread-local variable leads to a lock-free implementation that does not share variables. At the of the work, return the whole batch through a shared channel (once per batch instead of once per line)
 
 3. Merging
+
 The main thread must reduce all partial results into a single final result. This is trivial, since solving each line is commutative.
+
+4. Benchmark
+
+The multithreaded solution using 4 threads led to a 2-3x speedup for a 1000-line file. This is pretty good considering reading the file contributes a bit to the time it takes, and it's single-threaded in both implementations. I was surprised that thread creation overhead was negligible.
