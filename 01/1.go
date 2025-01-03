@@ -122,21 +122,25 @@ func fixDocumentST() results {
 }
 
 func findFirstDigit(s string) byte {
+	var digit = 0
 	for i := 0; i < len(s); i++ {
 		if s[i] >= '0' && s[i] <= '9' {
-			return s[i] - '0'
+			digit = s[i] - '0'
+			break
 		}
 	}
-	return 0
+	return digit
 }
 
 func findLastDigit(s string) byte {
+	var digit = 0
 	for i := len(s) - 1; i >= 0; i-- {
 		if s[i] >= '0' && s[i] <= '9' {
-			return s[i] - '0'
+			digit = s[i] - '0'
+			break
 		}
 	}
-	return 0
+	return digit
 }
 
 func findFirstNumber(s string) byte {
