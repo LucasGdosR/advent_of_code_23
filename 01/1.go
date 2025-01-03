@@ -36,7 +36,6 @@ var (
 	}
 	printST = true
 	printMT = true
-	buf     = make([]byte, 64)
 )
 
 func main() {
@@ -102,6 +101,7 @@ func fixDocumentST() results {
 	scanner := bufio.NewScanner(calibrationDocument)
 	var calibrationSums results
 
+	var buf = make([]byte, 64)
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -110,7 +110,7 @@ func fixDocumentST() results {
 		calibrationSums.part1 += int(first_digit*10 + last_digit)
 
 		firstNumber := findFirstNumber(line)
-		lastNumber := findLastNumber(line)
+		lastNumber := findLastNumber(line, buf)
 		calibrationSums.part2 += int(firstNumber*10 + lastNumber)
 	}
 
@@ -144,14 +144,14 @@ func findFirstNumber(s string) byte {
 	return numberMap[match]
 }
 
-func findLastNumber(s string) byte {
-	match := reverseRe.FindString(reverse(s))
-	return numberMap[reverse(match)]
+func findLastNumber(s string, buf []byte) byte {
+	match := reverseRe.FindString(reverse(s, buf))
+	return numberMap[reverse(match, buf)]
 }
 
-func reverse(s string) string {
+func reverse(s string, buf []byte) string {
 	size := len(s)
-	buf := buf[:size]
+	buf = buf[:size]
 	for i := 0; i < size; i++ {
 		buf[size-1-i] = s[i]
 	}
@@ -221,6 +221,7 @@ func fixDocumentMT() results {
 func processMemRange(data []byte, start int64, end int64) results {
 	var partial results
 
+	var buf = make([]byte, 64)
 	for start < end {
 		lineEnd := start
 		for lineEnd < end && data[lineEnd] != '\n' {
@@ -234,7 +235,7 @@ func processMemRange(data []byte, start int64, end int64) results {
 		partial.part1 += int(first_digit*10 + last_digit)
 
 		firstNumber := findFirstNumber(line)
-		lastNumber := findLastNumber(line)
+		lastNumber := findLastNumber(line, buf)
 		partial.part2 += int(firstNumber*10 + lastNumber)
 
 		start = lineEnd + 1

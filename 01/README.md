@@ -10,6 +10,7 @@
 - Passing the output of each line would lead to a lot of contention on the channel, as each worker would try to access it frequently
 - Accumulating the result in a shared variable would either require locks (single variable), or lead to false-sharing (an array of variables would share a 64 bytes cache line among cores)
 - **Solution**: accumulating the result to a thread-local variable leads to a lock-free implementation that does not share variables. At the of the work, return the whole batch through a shared channel (once per batch instead of once per line)
+- **Challenges**: I implemented an improvement to the code that reuses a buffer for reversing strings. This led to a bug in the concurrent implementation, as multiple workers mutated that same buffer. This was solved by creating one persistent buffer per worker instead of a global one.
 
 3. Merging
 
