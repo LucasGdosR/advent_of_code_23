@@ -5,8 +5,6 @@ import (
 	"bufio"
 	"fmt"
 	"regexp"
-	"runtime"
-	"syscall"
 )
 
 var (
@@ -27,8 +25,10 @@ var (
 
 func main() {
 	thisProgram := common.Benchmarkee[int, int]{
-		ST_Impl:  fixDocumentST,
-		MT_Impl:  fixDocumentMT,
+		ST_Impl: fixDocumentST,
+		MT_Impl: func() common.Results[int, int] {
+			return common.SolveCommonCaseMmapLinesInt(fixDocumentRange)
+		},
 		Part1Str: "Calibration sum",
 		Part2Str: "Calibration sum",
 	}
@@ -55,25 +55,6 @@ func fixDocumentST() common.Results[int, int] {
 	}
 
 	return calibrationSums
-}
-
-func fixDocumentMT() common.Results[int, int] {
-	mappedFile := common.Mmap("input")
-	defer syscall.Munmap(mappedFile.File)
-
-	numWorkers := runtime.GOMAXPROCS(0)
-	partialResults := make(chan common.Results[int, int], numWorkers)
-
-	common.MmapBacktrackingLinesSolution(mappedFile, partialResults, fixDocumentRange, numWorkers)
-
-	var total common.Results[int, int]
-	for i := 0; i < numWorkers; i++ {
-		r := <-partialResults
-		total.Part1 += r.Part1
-		total.Part2 += r.Part2
-	}
-
-	return total
 }
 
 func fixDocumentRange(data []byte, start int64, end int64) common.Results[int, int] {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"runtime"
 	"syscall"
 
 	"github.com/dterei/gotsc"
@@ -107,6 +108,25 @@ func Mmap(filepath string) *MappedFile {
 	}
 
 	return &MappedFile{File: data, Size: size}
+}
+
+func SolveCommonCaseMmapLinesInt(processMemRange func([]byte, int64, int64) Results[int, int]) Results[int, int] {
+	mappedFile := Mmap("input")
+	defer syscall.Munmap(mappedFile.File)
+
+	numWorkers := runtime.GOMAXPROCS(0)
+	partialResults := make(chan Results[int, int], numWorkers)
+
+	MmapBacktrackingLinesSolution(mappedFile, partialResults, processMemRange, numWorkers)
+
+	var total Results[int, int]
+	for i := 0; i < numWorkers; i++ {
+		r := <-partialResults
+		total.Part1 += r.Part1
+		total.Part2 += r.Part2
+	}
+
+	return total
 }
 
 func MmapBacktrackingLinesSolution[T1, T2 any](

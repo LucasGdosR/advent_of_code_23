@@ -5,18 +5,18 @@ import (
 	"bufio"
 	"fmt"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
 var re, _ = regexp.Compile(`Game (\d+): (.*)`)
 
 func main() {
 	thisProgram := common.Benchmarkee[int, int]{
-		ST_Impl:  solveColoredBallsST,
-		MT_Impl:  solveColoredBallsMT,
+		ST_Impl: solveColoredBallsST,
+		MT_Impl: func() common.Results[int, int] {
+			return common.SolveCommonCaseMmapLinesInt(solveColoredBallsRange)
+		},
 		Part1Str: "IDs sum",
 		Part2Str: "Power sum",
 	}
@@ -41,25 +41,6 @@ func solveColoredBallsST() common.Results[int, int] {
 	}
 
 	return idAndPowerSums
-}
-
-func solveColoredBallsMT() common.Results[int, int] {
-	mappedFile := common.Mmap("input")
-	defer syscall.Munmap(mappedFile.File)
-
-	numWorkers := runtime.GOMAXPROCS(0)
-	partialResults := make(chan common.Results[int, int], numWorkers)
-
-	common.MmapBacktrackingLinesSolution(mappedFile, partialResults, solveColoredBallsRange, numWorkers)
-
-	var total common.Results[int, int]
-	for i := 0; i < numWorkers; i++ {
-		r := <-partialResults
-		total.Part1 += r.Part1
-		total.Part2 += r.Part2
-	}
-
-	return total
 }
 
 func solveColoredBallsRange(data []byte, start int64, end int64) common.Results[int, int] {
