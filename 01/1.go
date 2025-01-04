@@ -1,24 +1,13 @@
 package main
 
 import (
+	"aoc/2023/common"
 	"bufio"
 	"fmt"
-	"math"
-	"os"
 	"regexp"
 	"runtime"
 	"syscall"
-
-	"github.com/dterei/gotsc"
 )
-
-type results struct {
-	part1, part2 int
-}
-
-type benchmark struct {
-	min, avg, max uint64
-}
 
 var (
 	forwardRe, _ = regexp.Compile(`(one|two|three|four|five|six|seven|eight|nine|\d)`)
@@ -34,84 +23,31 @@ var (
 		"eight": 8, "8": 8,
 		"nine": 9, "9": 9,
 	}
-	printST = true
-	printMT = true
 )
 
 func main() {
-	const runs = 1000
-	singleT := benchmark{min: math.MaxUint64, avg: 0, max: 0}
-	multiT := benchmark{min: math.MaxUint64, avg: 0, max: 0}
-
-	tsc := gotsc.TSCOverhead()
-	fmt.Println("TSC Overhead:", tsc)
-
-	for i := 0; i < runs; i++ {
-		timeST := benchmarkSingleThreaded()
-		singleT.min = min(singleT.min, timeST)
-		singleT.avg += timeST / runs
-		singleT.max = max(singleT.max, timeST)
-
-		timeC := benchmarkConcurrent()
-		multiT.min = min(multiT.min, timeC)
-		multiT.avg += timeC / runs
-		multiT.max = max(multiT.max, timeC)
+	thisProgram := common.Benchmarkee[int, int]{
+		ST_Impl:  fixDocumentST,
+		MT_Impl:  fixDocumentMT,
+		Part1Str: "Calibration sum",
+		Part2Str: "Calibration sum",
 	}
-
-	fmt.Println("Single threaded (cycles):", "Min:", singleT.min, "Avg:", singleT.avg, "Max:", singleT.max)
-	fmt.Println("Multi threaded  (cycles):", "Min:", multiT.min, "Avg:", multiT.avg, "Max:", multiT.max)
+	common.Benchmark(thisProgram, 1000)
 }
 
-func benchmarkSingleThreaded() uint64 {
-	start := gotsc.BenchStart()
-	calibrationSums := fixDocumentST()
-	end := gotsc.BenchEnd()
-
-	if printST {
-		fmt.Println("Calibration sum (part 1, ST):", calibrationSums.part1)
-		fmt.Println("Calibration sum (part 2, ST):", calibrationSums.part2)
-		printST = false
-	}
-
-	return end - start
-}
-
-func benchmarkConcurrent() uint64 {
-	start := gotsc.BenchStart()
-	calibrationSums := fixDocumentMT()
-	end := gotsc.BenchEnd()
-
-	if printMT {
-		fmt.Println("Calibration sum (part 1, MT):", calibrationSums.part1)
-		fmt.Println("Calibration sum (part 2, MT):", calibrationSums.part2)
-		printMT = false
-	}
-
-	return end - start
-}
-
-func fixDocumentST() results {
-	calibrationDocument, err := os.Open("input")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error opening file: %v\n", err)
-		os.Exit(1)
-	}
+func fixDocumentST() common.Results[int, int] {
+	calibrationDocument := common.Open("input")
 	defer calibrationDocument.Close()
 
 	scanner := bufio.NewScanner(calibrationDocument)
-	var calibrationSums results
+	var calibrationSums common.Results[int, int]
 
 	var buf = make([]byte, 64)
 	for scanner.Scan() {
 		line := scanner.Text()
-
-		first_digit := findFirstDigit(line)
-		last_digit := findLastDigit(line)
-		calibrationSums.part1 += int(first_digit*10 + last_digit)
-
-		firstNumber := findFirstNumber(line)
-		lastNumber := findLastNumber(line, buf)
-		calibrationSums.part2 += int(firstNumber*10 + lastNumber)
+		part1, part2 := calibrateLine(line, buf)
+		calibrationSums.Part1 += part1
+		calibrationSums.Part2 += part2
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -119,6 +55,56 @@ func fixDocumentST() results {
 	}
 
 	return calibrationSums
+}
+
+func fixDocumentMT() common.Results[int, int] {
+	mappedFile := common.Mmap("input")
+	defer syscall.Munmap(mappedFile.File)
+
+	numWorkers := runtime.GOMAXPROCS(0)
+	partialResults := make(chan common.Results[int, int], numWorkers)
+
+	common.MmapBacktrackingLinesSolution(mappedFile, partialResults, fixDocumentRange, numWorkers)
+
+	var total common.Results[int, int]
+	for i := 0; i < numWorkers; i++ {
+		r := <-partialResults
+		total.Part1 += r.Part1
+		total.Part2 += r.Part2
+	}
+
+	return total
+}
+
+func fixDocumentRange(data []byte, start int64, end int64) common.Results[int, int] {
+	var partial common.Results[int, int]
+
+	var buf = make([]byte, 64)
+	for start < end {
+		lineEnd := start
+		for lineEnd < end && data[lineEnd] != '\n' {
+			lineEnd++
+		}
+
+		line := string(data[start:lineEnd])
+		part1, part2 := calibrateLine(line, buf)
+		partial.Part1 += part1
+		partial.Part2 += part2
+
+		start = lineEnd + 1
+	}
+
+	return partial
+}
+
+func calibrateLine(line string, buf []byte) (int, int) {
+	first_digit := findFirstDigit(line)
+	last_digit := findLastDigit(line)
+
+	firstNumber := findFirstNumber(line)
+	lastNumber := findLastNumber(line, buf)
+
+	return int(first_digit*10 + last_digit), int(firstNumber*10 + lastNumber)
 }
 
 func findFirstDigit(s string) byte {
@@ -160,90 +146,4 @@ func reverse(s string, buf []byte) string {
 		buf[size-1-i] = s[i]
 	}
 	return string(buf)
-}
-
-func fixDocumentMT() results {
-	file, err := os.OpenFile("input", os.O_RDONLY, 0)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error opening file: %v\n", err)
-		return results{}
-	}
-	defer file.Close()
-
-	fi, err := file.Stat()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting file size: %v\n", err)
-		return results{}
-	}
-	size := fi.Size()
-
-	data, err := syscall.Mmap(int(file.Fd()), 0, int(size),
-		syscall.PROT_READ, syscall.MAP_SHARED)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error mapping file: %v\n", err)
-		return results{}
-	}
-	defer syscall.Munmap(data)
-
-	numWorkers := runtime.GOMAXPROCS(0)
-	partialResults := make(chan results, numWorkers)
-	bytesPerWorker := size / int64(numWorkers)
-
-	for i := 0; i < numWorkers; i++ {
-		start := int64(i) * bytesPerWorker
-		end := start + bytesPerWorker
-		if i == numWorkers-1 {
-			end = size
-		}
-
-		go func(start, end int64) {
-			if start > 0 {
-				for data[start-1] != '\n' {
-					start--
-				}
-			}
-			if end < int64(len(data)) {
-				for data[end-1] != '\n' {
-					end--
-				}
-			}
-			partial := processMemRange(data, start, end)
-			partialResults <- partial
-		}(start, end)
-	}
-
-	var total results
-	for i := 0; i < numWorkers; i++ {
-		r := <-partialResults
-		total.part1 += r.part1
-		total.part2 += r.part2
-	}
-
-	return total
-}
-
-func processMemRange(data []byte, start int64, end int64) results {
-	var partial results
-
-	var buf = make([]byte, 64)
-	for start < end {
-		lineEnd := start
-		for lineEnd < end && data[lineEnd] != '\n' {
-			lineEnd++
-		}
-
-		line := string(data[start:lineEnd])
-
-		first_digit := findFirstDigit(line)
-		last_digit := findLastDigit(line)
-		partial.part1 += int(first_digit*10 + last_digit)
-
-		firstNumber := findFirstNumber(line)
-		lastNumber := findLastNumber(line, buf)
-		partial.part2 += int(firstNumber*10 + lastNumber)
-
-		start = lineEnd + 1
-	}
-
-	return partial
 }
