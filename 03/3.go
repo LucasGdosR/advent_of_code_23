@@ -58,25 +58,7 @@ func findPartsAndGearRatiosMT() common.Results[int, int] {
 		if i == numWorkers-1 {
 			end = GRID_PLUS_SENTINELS - SENTINEL
 		}
-
-		go func(start, end int) {
-			parts := make([]int, 6)
-			var myResult common.Results[int, int]
-			for i := start; i < end; i++ {
-				for j := 1; j < GRID_PLUS_SENTINELS-2; j++ {
-					char := schematic[i][j]
-					if char != '.' && (char < '0' || char > '9') {
-						neighborCount := getNeighboringParts(schematic, i, j, parts)
-						neighborSum := sumParts(parts, neighborCount)
-						myResult.Part1 += neighborSum
-						if char == '*' && neighborCount == 2 {
-							myResult.Part2 += parts[0] * parts[1]
-						}
-					}
-				}
-			}
-			partialResults <- myResult
-		}(start, end)
+		go workerJob(start, end, partialResults, schematic)
 	}
 	var total common.Results[int, int]
 	for i := 0; i < numWorkers; i++ {
@@ -86,6 +68,24 @@ func findPartsAndGearRatiosMT() common.Results[int, int] {
 	}
 
 	return total
+}
+
+func workerJob(start, end int, partialResults chan common.Results[int, int], schematic [][]byte) {
+	parts := make([]int, 6)
+	var workerResult common.Results[int, int]
+	for i := start; i < end; i++ {
+		for j := 1; j < GRID_PLUS_SENTINELS-2; j++ {
+			char := schematic[i][j]
+			if char != '.' && (char < '0' || char > '9') {
+				neighborCount := getNeighboringParts(schematic, i, j, parts)
+				workerResult.Part1 += sumParts(parts, neighborCount)
+				if char == '*' && neighborCount == 2 {
+					workerResult.Part2 += parts[0] * parts[1]
+				}
+			}
+		}
+	}
+	partialResults <- workerResult
 }
 
 func readSchematic() [][]byte {
