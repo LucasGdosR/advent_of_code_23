@@ -2,7 +2,7 @@ package main
 
 import (
 	"aoc/2023/common"
-	"fmt"
+	"runtime"
 	"syscall"
 )
 
@@ -16,6 +16,16 @@ const (
 )
 
 func main() {
+	thisProgram := common.Benchmarkee[int, int]{
+		ST_Impl:  sumPointsAndCountScratchCardsST,
+		MT_Impl:  sumPointsAndCountScratchCardsMT,
+		Part1Str: "Points sum",
+		Part2Str: "Scratchcard count",
+	}
+	common.Benchmark(thisProgram, 1000)
+}
+
+func sumPointsAndCountScratchCardsST() common.Results[int, int] {
 	mappedFile := common.Mmap("input")
 	scratchcards := mappedFile.File
 	defer syscall.Munmap(scratchcards)
@@ -23,10 +33,7 @@ func main() {
 
 	var points = 0
 	scratchcardsWinnings := make([]int, CARD_COUNT)
-	// Forward would be:
-	// 	i := 0; i < size; i += LINE_LENGTH
-	// Backward allows for dynamic programming,
-	// since earlier lines depend on later lines
+	totalScratchcards := 0
 	for i, card := size-LINE_LENGTH+1, byte(CARD_COUNT-1); i >= 0; i, card = i-LINE_LENGTH, card-1 {
 		winners := scratchcards[i+WINNERS_START : i+WINNERS_END]
 		numbers := scratchcards[i+NUMBERS_START : i+NUMBERS_END]
@@ -40,13 +47,76 @@ func main() {
 			scratchcardsWon += scratchcardsWinnings[card+i]
 		}
 		scratchcardsWinnings[card] = scratchcardsWon
-	}
-	totalScratchcards := 0
-	for _, w := range scratchcardsWinnings {
-		totalScratchcards += w
+		totalScratchcards += scratchcardsWon
 	}
 
-	fmt.Println(points, totalScratchcards)
+	return common.Results[int, int]{Part1: points, Part2: totalScratchcards}
+}
+
+func sumPointsAndCountScratchCardsMT() common.Results[int, int] {
+	mappedFile := common.Mmap("input")
+	scratchcards := mappedFile.File
+	defer syscall.Munmap(scratchcards)
+
+	numWorkers := runtime.GOMAXPROCS(0)
+	linesPerWoker := (CARD_COUNT + numWorkers - 1) / numWorkers
+
+	partialPoints := make(chan int, numWorkers)
+	matches := make([][]int, numWorkers)
+
+	for i := 0; i < numWorkers; i++ {
+		start := i * linesPerWoker
+		end := start + linesPerWoker
+		if i == numWorkers-1 {
+			end = CARD_COUNT
+		}
+		partialMatches := make([]int, end-start)
+		matches[i] = partialMatches
+
+		go func(start, end int, partialMatches []int) {
+			myPoints := 0
+			j := 0
+			for i, card := start*LINE_LENGTH, start; card < end; i, card = i+LINE_LENGTH, card+1 {
+				winners := scratchcards[i+WINNERS_START : i+WINNERS_END]
+				numbers := scratchcards[i+NUMBERS_START : i+NUMBERS_END]
+
+				winnerSet := makeWinnersSet(winners)
+				myMatches := getMatches(winnerSet, numbers)
+				myPoints += 1 << (myMatches - 1)
+				partialMatches[j] = int(myMatches)
+				j++
+			}
+			partialPoints <- myPoints
+		}(start, end, partialMatches)
+	}
+
+	return reduceResults(partialPoints, numWorkers, matches)
+}
+
+func reduceResults(partialPoints chan int, numWorkers int, matches [][]int) common.Results[int, int] {
+	var total common.Results[int, int]
+	for i := 0; i < numWorkers; i++ {
+		total.Part1 += <-partialPoints
+	}
+
+	for i := len(matches) - 1; i >= 0; i-- {
+		for j := len(matches[i]) - 1; j >= 0; j-- {
+			scratchcardsWon := 1
+			myMatches := matches[i][j]
+			for k, mutI, mutJ := 0, i, j; k < myMatches; k++ {
+				if mutJ == len(matches[mutI])-1 {
+					mutI, mutJ = mutI+1, 0
+				} else {
+					mutJ++
+				}
+				scratchcardsWon += matches[mutI][mutJ]
+			}
+			matches[i][j] = scratchcardsWon
+			total.Part2 += scratchcardsWon
+		}
+	}
+
+	return total
 }
 
 func makeWinnersSet(winners []byte) map[byte]struct{} {
