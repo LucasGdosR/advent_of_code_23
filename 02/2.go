@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -65,7 +64,7 @@ func solveColoredBallsRange(data []byte, start int64, end int64) common.Results[
 }
 
 func solveGame(game []string) (int, int) {
-	id, _ := strconv.Atoi(game[1])
+	id := common.Atoi(game[1])
 	var rMax, gMax, bMax = 0, 0, 0
 
 	countColors := strings.FieldsFunc(game[2], func(r rune) bool {
@@ -74,7 +73,7 @@ func solveGame(game []string) (int, int) {
 
 	for _, countColor := range countColors {
 		cubes := strings.Fields(countColor)
-		count, _ := strconv.Atoi(cubes[0])
+		count := common.Atoi(cubes[0])
 		switch cubes[1] {
 		case "red":
 			if count > 12 {

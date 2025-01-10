@@ -5,8 +5,6 @@ import (
 	"bufio"
 	"fmt"
 	"math"
-	"os"
-	"strconv"
 	"strings"
 )
 
@@ -56,7 +54,7 @@ func makeSeeds(s *bufio.Scanner) ([]interval, []interval) {
 	individualSeeds := make([]interval, l)
 	seedRanges := make([]interval, l>>1)
 	for i := 0; i < l; i += 2 {
-		min, rng := Atoi(seedsStr[i]), Atoi(seedsStr[i+1])
+		min, rng := common.Atoi(seedsStr[i]), common.Atoi(seedsStr[i+1])
 		individualSeeds[i] = interval{min: min, max: min}
 		individualSeeds[i+1] = interval{min: rng, max: rng}
 		seedRanges[i>>1] = interval{min: min, max: min + rng - 1}
@@ -74,9 +72,9 @@ func makeIntervalTree(s *bufio.Scanner) *intervalTree {
 			break
 		}
 		nodeStr := strings.Fields(line)
-		dstStart := Atoi(nodeStr[0])
-		srcStart := Atoi(nodeStr[1])
-		rng := Atoi(nodeStr[2])
+		dstStart := common.Atoi(nodeStr[0])
+		srcStart := common.Atoi(nodeStr[1])
+		rng := common.Atoi(nodeStr[2])
 		node := intervalTree{key: interval{min: srcStart, max: srcStart + rng}, offset: dstStart - srcStart}
 		root = root.insert(&node)
 	}
@@ -131,13 +129,4 @@ func mapInterval(node *intervalTree, seed interval) []interval {
 	}
 
 	return result
-}
-
-func Atoi(s string) int {
-	i, err := strconv.Atoi(s)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing int: %v\n", err)
-		os.Exit(1)
-	}
-	return i
 }

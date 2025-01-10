@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"strconv"
 	"syscall"
 
 	"github.com/dterei/gotsc"
@@ -160,4 +161,13 @@ func MmapBacktrackingLinesSolution[T1, T2 any](
 			partialResults <- processMemRange(file, start, end)
 		}(start, end)
 	}
+}
+
+func Atoi(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing int: %v\n", err)
+		os.Exit(1)
+	}
+	return i
 }
