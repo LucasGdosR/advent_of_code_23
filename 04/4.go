@@ -98,6 +98,7 @@ func reduceResults(partialPoints chan int, numWorkers int, matches [][]int) comm
 	for i := 0; i < numWorkers; i++ {
 		total.Part1 += <-partialPoints
 	}
+	close(partialPoints)
 
 	for i := len(matches) - 1; i >= 0; i-- {
 		for j := len(matches[i]) - 1; j >= 0; j-- {

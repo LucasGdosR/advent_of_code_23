@@ -66,6 +66,7 @@ func findPartsAndGearRatiosMT() common.Results[int, int] {
 		total.Part1 += r.Part1
 		total.Part2 += r.Part2
 	}
+	close(partialResults)
 
 	return total
 }
