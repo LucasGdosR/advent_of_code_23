@@ -3,7 +3,6 @@ package main
 import (
 	"aoc/2023/common"
 	"bufio"
-	"fmt"
 	"math"
 	"strings"
 )
@@ -19,6 +18,16 @@ type intervalTree struct {
 }
 
 func main() {
+	thisProgram := common.Benchmarkee[int, int]{
+		ST_Impl:  mapSeedsAndIntervalsST,
+		MT_Impl:  mapSeedsAndIntervalsMT,
+		Part1Str: "Closest seed",
+		Part2Str: "Closest seed",
+	}
+	common.Benchmark(thisProgram, 1000)
+}
+
+func mapSeedsAndIntervalsST() common.Results[int, int] {
 	almanac := common.Open("input")
 	defer almanac.Close()
 
@@ -43,8 +52,47 @@ func main() {
 			rangeMin = seed.min
 		}
 	}
-	fmt.Println("Closest seed (part 1):", individualMin)
-	fmt.Println("Closest seed (pat 2):", rangeMin)
+	return common.Results[int, int]{Part1: individualMin, Part2: rangeMin}
+}
+
+func mapSeedsAndIntervalsMT() common.Results[int, int] {
+	almanac := common.Open("input")
+	defer almanac.Close()
+
+	scanner := bufio.NewScanner(almanac)
+
+	individualSeeds, seedRanges := makeSeeds(scanner)
+	const seed2Soil2Fertilizer2Water2Light2Temperature2Humidity2Location = 7
+
+	trees := make(chan *intervalTree, seed2Soil2Fertilizer2Water2Light2Temperature2Humidity2Location)
+	results := make(chan common.Results[int, int])
+	go func() {
+		for i := 0; i < seed2Soil2Fertilizer2Water2Light2Temperature2Humidity2Location; i++ {
+			tree := <-trees
+			individualSeeds = tree.Map(individualSeeds)
+			seedRanges = tree.Map(seedRanges)
+		}
+		individualMin, rangeMin := math.MaxInt, math.MaxInt
+		for _, seed := range individualSeeds {
+			if seed.min < individualMin {
+				individualMin = seed.min
+			}
+		}
+		for _, seed := range seedRanges {
+			if seed.min < rangeMin {
+				rangeMin = seed.min
+			}
+		}
+		results <- common.Results[int, int]{Part1: individualMin, Part2: rangeMin}
+		close(results)
+	}()
+
+	for i := 0; i < seed2Soil2Fertilizer2Water2Light2Temperature2Humidity2Location; i++ {
+		trees <- makeIntervalTree(scanner)
+	}
+	close(trees)
+
+	return <-results
 }
 
 func makeSeeds(s *bufio.Scanner) ([]interval, []interval) {
