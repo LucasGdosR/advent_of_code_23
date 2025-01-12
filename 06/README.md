@@ -1,0 +1,3 @@
+**How to apply concurrency to this problem**
+
+Theoretically, it is possible to have a producer parse the input and send races through a channel, while a consumer calculates the margin of error. However, parsing comes down to two calls to Atoi(), and calculating the margin of error is a trivial computation. The input has only 8 numbers. This is a problem solved by the programmer doing math, not by the program computing.
