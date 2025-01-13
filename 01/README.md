@@ -1,4 +1,4 @@
-![Data Flow Graph](https://github.com/LucasGdosR/advent_of_code_23/blob/main/01/01.jpg)
+![Data Flow Graph](https://github.com/LucasGdosR/advent_of_code_23/blob/main/01/01.jpg) 
 
 Each line could be parsed in parallel. For every line, finding the first and last digits / numbers could be done in parallel. Actually doing the calibration requires both the first and last digits / numbers, so they must sync at this point. Summing all the calibration results requires every line, so they must sync too (although this sum could be pipelined as lines are calibrated, indicated by the dashed lines). When both sums are ready, the problem can end.
 
