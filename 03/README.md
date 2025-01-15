@@ -1,3 +1,7 @@
+![Data-flow graph](https://github.com/LucasGdosR/advent_of_code_23/blob/main/03/03.jpg)
+
+Each character could be checked in parallel. I passed lines around as a way of chunking the work, but they could be arbitrary characters. For every character, every direction can be checked independently. Diagonals are not included, as a number being present in any of the three slots in a row may interfere with others (if all three are present, it is just a single number, for example). Parts can be summed in a pipeline, as each is independent. Gear ratios depend on the number of numbers around a `*`, so they must synchronize before being summed to ensure there are only two numbers around the gear. Each gear ratio can be summed in a pipeline. The sums are synchronized to find the result, and then the program ends.
+
 **How to apply concurrency to this problem**
 
 1. Producing
