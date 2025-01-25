@@ -40,7 +40,7 @@ func countPossibleArragementsMT() common.Results[int, int] {
 
 func countRangeArrangements(data []byte, start int64, end int64) common.Results[int, int] {
 	var partial common.Results[int, int]
-	memo := make(map[string]int, 260417)
+	memo := make(map[string]int, 70000)
 	for start < end {
 		whitespace := start + 10
 		for data[whitespace] != ' ' {
