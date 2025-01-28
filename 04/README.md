@@ -1,3 +1,7 @@
+![Data-flow graph](https://github.com/LucasGdosR/advent_of_code_23/blob/main/04/04.jpg)
+
+Each line can be parsed in parallel, and in fact each number can be parsed in parallel. As winner numbers are parsed, they be incrementally added to a set, marked by the dashed pipeline. As scratchcard numbers are parsed, they can be incrementally tested for membership in the winner set, but they require the winner set to be complete, so this is a synchronization point. As the number of winners per scratchcard are discovered, the points they score can be summed in a pipeline for part 1. For part 2, the winnings of a card depend on the winnings of the following cards. With this dependency, no parallelism is possible. We must count the winnings of the last scratchcard, then the previous, and so on. This is a dynamic programming problem that does not lend itself well to parallel approaches.
+
 **How to apply concurrency to this problem**
 
 1. Producing
