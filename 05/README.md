@@ -1,3 +1,7 @@
+![Data-flow graph](https://github.com/LucasGdosR/advent_of_code_23/blob/main/05/05.jpg)
+
+Seeds, intervals, and trees can be parsed in parallel. Once a seed / interval is parsed, it can enter a pipeline to be mapped. This has two meanings: each seed / interval can be mapped in parallel (with the individual seed going through all trees), as is also possible to map all seeds through one the same tree in parallel. In this case, it is better to go through all seeds / intervals once a tree is ready. The i-th mapping requires the i-th tree to be built. Although all trees can be built in parallel, they can only be used for mapping once all previous trees have already been built. As seeds and intervals are mapped, the minimum value can be gathered via a pipeline that keeps only the minimum value seen. I'm not 
+
 **How to apply concurrency to this problem**
 
 This problem has three parts: building interval trees, mapping seeds according to the trees, and mapping intervals according to the trees. The input file's lines have a variable length, so we must parse the file to get to the trees. This means they must be built sequentially. Fundamentally, though, the trees do not depend on each other, so they could be built in parallel. Every interval and every seed could also be mapped in parallel, though they must go through the trees in sequential order.
