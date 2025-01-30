@@ -1,3 +1,7 @@
+![Data-flow graph](https://github.com/LucasGdosR/advent_of_code_23/blob/main/07/07.jpg)
+
+Each line can be parsed in parallel. They then need to be sorted according to two different priorities. Both priorities can be sorted in parallel, each in a different array. Ranges of hands can be sorted in parallel using any algorithm (such as quicksort), and then those ranges can be merged via merge-sort. Having pre-sorted partial arrays lends itself to an efficient and simple merge sort, which does not require partitioning, only merging. We must then get the full ordering of hands, so this becomes a synchronization point. Once we know the ordering of hands, we can calculate the winnings of each hand in parallel, knowing only its index in the final sorted array. Those winnings can be reduced in parallel to produce the final result.
+
 **How to apply concurrency to this problem**
 
 Each line in the file is an entry. This means we can parse lines independently. Not all lines have the same lenght, so in order to parse them in parallel using offsets into `Mmap`, some backtracking might be needed to find line breaks.
