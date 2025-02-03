@@ -1,3 +1,7 @@
+![Data-flow graph](https://github.com/LucasGdosR/advent_of_code_23/blob/main/10/10.jpg)
+
+The cycle can be found by going both ways concurrently and seeing when they meet. Then, each line can be processed in parallel. The sum of all lines can be reduced in parallel as the results become available.
+
 **How to apply concurrency to this problem**
 
 There's no parsing in this problem, just reading a file.
