@@ -1,3 +1,7 @@
+![Data-flow graph](https://github.com/LucasGdosR/advent_of_code_23/blob/main/11/11.jpg)
+
+Each character in the input can be processed in parallel by using idempotent operations to mark columns and rows as empty. Once the empty rows and columns are known, galaxies can have their positions adjusted. Once galaxies are at their correct positions, the distance between them can be calculated. Finally, they can be summed in parallel.
+
 **How to apply concurrency to this problem**
 
 There are a bunch of tasks in this problem, so we should use a thread pool and pass them tasks.
